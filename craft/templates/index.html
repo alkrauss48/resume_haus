@@ -20,14 +20,77 @@
 {% extends "_layout" %}
 
 {% block content %}
-	<h1>{{ entry.title }}</h1>
 
-	{{ entry.body }}
+    <section id="about">
+      <div class="row">
+        <div class="col-lg-12 page-header">
+          <h2>About</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <p>
+            Aaron Krauss is currently a web developer working at Staplegun in Oklahoma City, Oklahoma.
+            He specializes in open source and available technologies such as Ruby, PHP, Javascript, HTML5, CSS3, Git, SQL,
+            MongoDB, Shell, Java, C/C++, etc., but also has experience with proprietary languages as well such as C#, ASP.NET, VB.NET, and SQL Server.
+          </p>
+        </div>
+      </div>
+    </section>
 
-	<h2>Recent News</h2>
-	<ul>
-		{% for entry in craft.entries.section('news').limit(5).find() %}
-			<li><a href="{{ entry.url }}">{{ entry.title }}</a></li>
-		{% endfor %}
-	</ul>
+    <section id="education">
+      <div class="row">
+        <div class="col-lg-12 page-header">
+          <h2>Education</h2>
+        </div>
+      </div>
+    </section>
+    <section id="experience">
+      <div class="row">
+        <div class="col-lg-12 page-header">
+          <h2>Professional Experience </h2>
+        </div>
+      </div>
+    </section>
+    <section id="technical">
+      <div class="row">
+        <div class="col-lg-12 page-header">
+          <h2>Technical</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-8">
+        </div>
+        <div class="col-sm-4">
+          <div class="clearfix well">
+            <h4>Selected Projects</h4>
+            <hr />
+            <ul>
+            </ul>
+            <a class="pull-right btn btn-default" href="http://github.com/alkrauss48">Github Profile</i></a><br />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="honors">
+      <div class="row">
+        <div class="col-sm-12 page-header">
+          <h2>Awards and Interests</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-8">
+        </div>
+      </div>
+    </section>
+<!-- 	<h1>{{ entry.title }}</h1> -->
+<!--  -->
+<!-- 	{{ entry.body }} -->
+<!--  -->
+<!-- 	<h2>Recent News</h2> -->
+<!-- 	<ul> -->
+<!-- 		{% for entry in craft.entries.section('news').limit(5).find() %} -->
+<!-- 			<li><a href="{{ entry.url }}">{{ entry.title }}</a></li> -->
+<!-- 		{% endfor %} -->
+<!-- 	</ul> -->
 {% endblock %}
