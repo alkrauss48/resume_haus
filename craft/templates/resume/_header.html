@@ -6,13 +6,13 @@
       <span class="" style="text-align: center;">
         <address>
           {% if entry.webSite %}
-          <a href="{{entry.webSite}}">{{entry.webSite}}</a><br />
+            <a href="{{entry.webSite}}">{{entry.webSite}}</a><br />
           {% endif %}
           {% if entry.emailAddress %}
-          <a href="{{entry.emailAddress}}">{{entry.emailAddress}}</a><br />
+            <a href="mailto:{{entry.emailAddress}}">{{entry.emailAddress}}</a><br />
           {% endif %}
           {% if entry.phoneNumber %}
-          <a href="{{entry.phoneNumber}}">{{entry.phoneNumber}}</a><br />
+            <a href="tel:{{ entry.phoneNumber | replace({'.': '', '-': ''}) }}">{{entry.phoneNumber}}</a><br />
           {% endif %}
         </address>
       </span>
