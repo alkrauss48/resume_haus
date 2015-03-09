@@ -6,7 +6,7 @@
       <span class="" style="text-align: center;">
         <address>
           {% if entry.webSite %}
-            <a href="{{entry.webSite}}">{{entry.webSite}}</a><br />
+            <a target="_blank" href="{{entry.webSite}}">{{entry.webSite | replace({"http://": "", "https://":""}) }}</a><br />
           {% endif %}
           {% if entry.emailAddress %}
             <a href="mailto:{{entry.emailAddress}}">{{entry.emailAddress}}</a><br />
