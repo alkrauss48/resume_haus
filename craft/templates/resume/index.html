@@ -8,7 +8,12 @@
   <meta name="description" content="Cirriculum Vitae for {{ entry.title }}">
   <meta name="author" content="Aaron L. Krauss">
 
-  <link href="//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.2/{{ entry.theme }}/bootstrap.min.css" rel="stylesheet">
+  {% if craft.request.getQuery('theme') %}
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.2/{{ craft.request.getQuery('theme') }}/bootstrap.min.css" rel="stylesheet">
+  {% else %}
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.2/{{ entry.theme }}/bootstrap.min.css" rel="stylesheet">
+  {% endif %}
+
   {% include 'resume/_styles' %}
 
   <!--[if lt IE 9]>
