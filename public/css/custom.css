@@ -5,3 +5,7 @@ header.major h2 {
 header.major ul.major li {
   margin-bottom: 1em;
 }
+
+form input[type="file"] {
+  width: 100%;
+}
