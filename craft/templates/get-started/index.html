@@ -189,18 +189,14 @@
                     {{ message is defined and message ?  errorList(message.getErrors('fromEmail')) }}
                   </div>
                   <div class="4u 12u(mobile)">
-                    <label for="resumeFile">Current Resume:</label>
-                    <input name="attachment" id="attachment" type="file"
-                      value="{% if message is defined %}{{ message.attachment }}{% endif %}"
-                    />
+                    <label for="attachment">Current Resume:</label>
+                    <input name="attachment" id="attachment" type="file" />
                     {{ message is defined and message ?  errorList(message.getErrors('attachment')) }}
                   </div>
                 </div>
                 <div class="row 50%">
                   <div class="12u">
-                    <textarea name="message" placeholder="Message">
-                      {% if message is defined %}{{ message.message }}{% endif %}
-                    </textarea>
+                    <textarea name="message" placeholder="Message">{% if message is defined %}{{ message.message }}{% endif %}</textarea>
                     {{ message is defined and message ? errorList(message.getErrors('message')) }}
                   </div>
                 </div>
