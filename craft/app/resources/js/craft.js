@@ -25,10 +25,10 @@ $.extend(Craft,
 	asciiCharMap: {
 		'216':'O',  '223':'ss', '224':'a',  '225':'a',  '226':'a',  '229':'a',  '227':'ae', '230':'ae', '228':'ae', '231':'c',
 		'232':'e',  '233':'e',  '234':'e',  '235':'e',  '236':'i',  '237':'i',  '238':'i',  '239':'i',  '241':'n',  '242':'o',
-		'243':'o', 	'244':'o',  '245':'o',  '246':'oe', '248':'o',  '249':'u',  '250':'u',  '251':'u',  '252':'ue', '255':'y',
+		'243':'o',  '244':'o',  '245':'o',  '246':'oe', '248':'o',  '249':'u',  '250':'u',  '251':'u',  '252':'ue', '255':'y',
 		'257':'aa', '269':'ch', '275':'ee', '291':'gj', '299':'ii', '311':'kj', '316':'lj', '326':'nj', '353':'sh', '363':'uu',
-		'382':'zh', '256':'aa', '268':'ch', '274':'ee', '290':'gj', '298':'ii', '310':'kj', '315':'lj', '325':'nj', '352':'sh',
-		'362':'uu', '381':'zh'
+		'382':'zh', '256':'aa', '268':'ch', '274':'ee', '290':'gj', '298':'ii', '310':'kj', '315':'lj', '325':'nj', '337':'o',
+		'352':'sh', '362':'uu', '369':'u',  '381':'zh'
 	},
 
 	/**
@@ -1262,7 +1262,10 @@ $.extend($.fn,
 	{
 		return this.each(function()
 		{
-			new Craft.Pane(this);
+			if (!$.data(this, 'pane'))
+			{
+				new Craft.Pane(this);
+			}
 		});
 	},
 
@@ -1332,7 +1335,7 @@ $.extend($.fn,
 	{
 		return this.each(function()
 		{
-			if (!$.data(this, 'text'))
+			if (!$.data(this, 'nicetext'))
 			{
 				new Garnish.NiceText(this);
 			}
@@ -1961,7 +1964,7 @@ Craft.BaseElementIndex = Garnish.Base.extend(
 			source:              this.instanceState.selectedSource,
 			status:              this.status,
 			viewState:           this.getSelectedSourceState(),
-			search:              (this.$search ? this.$search.val() : null)
+			search:              (this.searching ? this.$search.val() : null)
 		};
 
 		// Possible that the order/sort isn't entirely accurate if we're sorting by Score
@@ -2717,8 +2720,16 @@ Craft.BaseElementIndex = Garnish.Base.extend(
 
 	getDefaultSort: function()
 	{
-		// Default to whatever's first
-		return [this.$sortAttributesList.find('a:first').data('attr'), 'asc'];
+		// Does the source specify what to do?
+		if (Garnish.hasAttr(this.$source, 'data-default-sort'))
+		{
+			return this.$source.attr('data-default-sort').split(':');
+		}
+		else
+		{
+			// Default to whatever's first
+			return [this.$sortAttributesList.find('a:first').data('attr'), 'asc'];
+		}
 	},
 
 	getViewModesForSource: function()
@@ -4165,6 +4176,7 @@ Craft.BaseInputGenerator = Garnish.Base.extend(
 {
 	$source: null,
 	$target: null,
+	$form: null,
 	settings: null,
 
 	listening: null,
@@ -4174,6 +4186,8 @@ Craft.BaseInputGenerator = Garnish.Base.extend(
 	{
 		this.$source = $(source);
 		this.$target = $(target);
+		this.$form = this.$source.closest('form');
+
 		this.setSettings(settings);
 
 		this.startListening();
@@ -4202,6 +4216,7 @@ Craft.BaseInputGenerator = Garnish.Base.extend(
 		this.listening = true;
 
 		this.addListener(this.$source, 'textchange', 'onTextChange');
+		this.addListener(this.$form, 'submit', 'onFormSubmit');
 
 		this.addListener(this.$target, 'focus', function() {
 			this.addListener(this.$target, 'textchange', 'stopListening');
@@ -4222,6 +4237,7 @@ Craft.BaseInputGenerator = Garnish.Base.extend(
 
 		this.removeAllListeners(this.$source);
 		this.removeAllListeners(this.$target);
+		this.removeAllListeners(this.$form);
 	},
 
 	onTextChange: function()
@@ -4232,6 +4248,16 @@ Craft.BaseInputGenerator = Garnish.Base.extend(
 		}
 
 		this.timeout = setTimeout($.proxy(this, 'updateTarget'), 250);
+	},
+
+	onFormSubmit: function()
+	{
+		if (this.timeout)
+		{
+			clearTimeout(this.timeout);
+		}
+
+		this.updateTarget();
 	},
 
 	updateTarget: function()
@@ -4506,6 +4532,10 @@ Craft.AdminTable = Garnish.Base.extend(
  */
 Craft.AssetIndex = Craft.BaseElementIndex.extend(
 {
+	$includeSubfoldersContainer: null,
+	$includeSubfoldersCheckbox: null,
+	showingIncludeSubfoldersCheckbox: false,
+
 	$uploadButton: null,
 	$uploadInput: null,
 	$progressBar: null,
@@ -4595,7 +4625,7 @@ Craft.AssetIndex = Craft.BaseElementIndex.extend(
 		this.settings.selectable = true;
 		this.settings.multiSelect = true;
 
-		var onDragStartProxy = $.proxy(this, '_onDragStart')
+		var onDragStartProxy = $.proxy(this, '_onDragStart'),
 			onDropTargetChangeProxy = $.proxy(this, '_onDropTargetChange');
 
 		// File dragging
@@ -4783,6 +4813,7 @@ Craft.AssetIndex = Craft.BaseElementIndex.extend(
 
 					this.setIndexAvailable();
 					this.progressBar.hideProgressBar();
+					var reloadIndex = false;
 
 					var performAfterMoveActions = function ()
 					{
@@ -4798,7 +4829,13 @@ Craft.AssetIndex = Craft.BaseElementIndex.extend(
 							$('[data-id=' + originalFileIds[i] + ']').remove();
 						}
 
+						this.elementSelect.deselectAll();
 						this._collapseExtraExpandedFolders(targetFolderId);
+
+						if (reloadIndex)
+						{
+							this.updateElements();
+						}
 					};
 
 					if (this.promptHandler.getPromptCount())
@@ -4813,6 +4850,7 @@ Craft.AssetIndex = Craft.BaseElementIndex.extend(
 							{
 								if (returnData[i].choice == 'cancel')
 								{
+									reloadIndex = true;
 									continue;
 								}
 
@@ -5337,6 +5375,74 @@ Craft.AssetIndex = Craft.BaseElementIndex.extend(
 	_getFolderIdFromSourceKey: function(sourceKey)
 	{
 		return sourceKey.split(':')[1];
+	},
+
+	onStartSearching: function()
+	{
+		// Does this source have subfolders?
+		if (this.$source.siblings('ul').length)
+		{
+			if (this.$includeSubfoldersContainer === null)
+			{
+				var id = 'includeSubfolders-'+Math.floor(Math.random()*1000000000);
+
+				this.$includeSubfoldersContainer = $('<div style="margin-bottom: -23px; opacity: 0;"/>').insertAfter(this.$search);
+				var $subContainer = $('<div style="padding-top: 5px;"/>').appendTo(this.$includeSubfoldersContainer);
+				this.$includeSubfoldersCheckbox = $('<input type="checkbox" id="'+id+'" class="checkbox"/>').appendTo($subContainer);
+				$('<label class="light smalltext" for="'+id+'"/>').text(' '+Craft.t('Search in subfolders')).appendTo($subContainer);
+
+				this.addListener(this.$includeSubfoldersCheckbox, 'change', function()
+				{
+					this.setSelecetedSourceState('includeSubfolders', this.$includeSubfoldersCheckbox.prop('checked'));
+					this.updateElements();
+				});
+			}
+			else
+			{
+				this.$includeSubfoldersContainer.velocity('stop');
+			}
+
+			var checked = this.getSelectedSourceState('includeSubfolders', false)
+			this.$includeSubfoldersCheckbox.prop('checked', checked);
+
+			this.$includeSubfoldersContainer.velocity({
+				marginBottom: 0,
+				opacity: 1
+			}, 'fast');
+
+			this.showingIncludeSubfoldersCheckbox = true;
+		}
+
+		this.base();
+	},
+
+	onStopSearching: function()
+	{
+		if (this.showingIncludeSubfoldersCheckbox)
+		{
+			this.$includeSubfoldersContainer.velocity('stop');
+
+			this.$includeSubfoldersContainer.velocity({
+				marginBottom: -23,
+				opacity: 0
+			}, 'fast');
+
+			this.showingIncludeSubfoldersCheckbox = false;
+		}
+
+		this.base();
+	},
+
+	getControllerData: function()
+	{
+		var data = this.base();
+
+		if (this.showingIncludeSubfoldersCheckbox && this.$includeSubfoldersCheckbox.prop('checked'))
+		{
+			data.criteria.includeSubfolders = true;
+		}
+
+		return data;
 	},
 
 	/**
@@ -6330,6 +6436,8 @@ Craft.AuthManager = Garnish.Base.extend(
 	$loginBtn: null,
 	$loginErrorPara: null,
 
+	submitLoginIfLoggedOut: false,
+
 	/**
 	 * Init
 	 */
@@ -6361,9 +6469,16 @@ Craft.AuthManager = Garnish.Base.extend(
 			type: 'GET',
 			complete: $.proxy(function(jqXHR, textStatus)
 			{
-				if (textStatus == 'success' && !isNaN(jqXHR.responseText))
+				if (textStatus == 'success')
 				{
-					this.updateAuthTimeout(jqXHR.responseText);
+					this.updateAuthTimeout(jqXHR.responseJSON.timeout);
+
+					this.submitLoginIfLoggedOut = false;
+
+					if (typeof jqXHR.responseJSON.csrfTokenValue !== 'undefined' && typeof Craft.csrfTokenValue !== 'undefined')
+					{
+						Craft.csrfTokenValue = jqXHR.responseJSON.csrfTokenValue;
+					}
 				}
 				else
 				{
@@ -6403,10 +6518,20 @@ Craft.AuthManager = Garnish.Base.extend(
 					this.showLoginModalTimer = setTimeout($.proxy(this, 'showLoginModal'), this.authTimeout*1000);
 				}
 			}
-			else if (!this.showingLoginModal)
+			else
 			{
-				// Show the login modal
-				this.showLoginModal();
+				if (this.showingLoginModal)
+				{
+					if (this.submitLoginIfLoggedOut)
+					{
+						this.submitLogin();
+					}
+				}
+				else
+				{
+					// Show the login modal
+					this.showLoginModal();
+				}
 			}
 
 			this.setCheckAuthTimeoutTimer(Craft.AuthManager.checkInterval);
@@ -6685,40 +6810,55 @@ Craft.AuthManager = Garnish.Base.extend(
 			this.$passwordSpinner.removeClass('hidden');
 			this.clearLoginError();
 
-			var data = {
-				loginName: Craft.username,
-				password: this.$passwordInput.val()
-			};
-
-			Craft.postActionRequest('users/login', data, $.proxy(function(response, textStatus)
+			if (typeof Craft.csrfTokenValue != 'undefined')
 			{
-				this.$passwordSpinner.addClass('hidden');
+				// Check the auth status one last time before sending this off,
+				// in case the user has already logged back in from another window/tab
+				this.submitLoginIfLoggedOut = true;
+				this.checkAuthTimeout();
+			}
+			else
+			{
+				this.submitLogin();
+			}
+		}
+	},
 
-				if (textStatus == 'success')
+	submitLogin: function()
+	{
+		var data = {
+			loginName: Craft.username,
+			password: this.$passwordInput.val()
+		};
+
+		Craft.postActionRequest('users/login', data, $.proxy(function(response, textStatus)
+		{
+			this.$passwordSpinner.addClass('hidden');
+
+			if (textStatus == 'success')
+			{
+				if (response.success)
 				{
-					if (response.success)
-					{
-						this.hideLoginModal();
-						this.checkAuthTimeout();
-					}
-					else
-					{
-						this.showLoginError(response.error);
-						Garnish.shake(this.loginModal.$container);
-
-						if (!Garnish.isMobileBrowser(true))
-						{
-							this.$passwordInput.focus();
-						}
-					}
+					this.hideLoginModal();
+					this.checkAuthTimeout();
 				}
 				else
 				{
-					this.showLoginError();
-				}
+					this.showLoginError(response.error);
+					Garnish.shake(this.loginModal.$container);
 
-			}, this));
-		}
+					if (!Garnish.isMobileBrowser(true))
+					{
+						this.$passwordInput.focus();
+					}
+				}
+			}
+			else
+			{
+				this.showLoginError();
+			}
+
+		}, this));
 	},
 
 	showLoginError: function(error)
@@ -6853,11 +6993,12 @@ Craft.CategorySelectInput = Craft.BaseElementSelectInput.extend(
 		}
 
 		var data = {
-			categoryIds: selectedCategoryIds,
-			locale:      elements[0].locale,
-			id:          this.settings.id,
-			name:        this.settings.name,
-			limit:       this.settings.limit,
+			categoryIds:    selectedCategoryIds,
+			locale:         elements[0].locale,
+			id:             this.settings.id,
+			name:           this.settings.name,
+			limit:          this.settings.limit,
+			selectionLabel: this.settings.selectionLabel
 		};
 
 		Craft.postActionRequest('elements/getCategoriesInputHtml', data, $.proxy(function(response, textStatus)
@@ -7379,6 +7520,7 @@ Craft.EditableTable.Row = Garnish.Base.extend(
 				if (col.type == 'singleline' || col.type == 'number')
 				{
 					this.addListener($textarea, 'keypress', { type: col.type }, 'validateKeypress');
+					this.addListener($textarea, 'textchange', { type: col.type }, 'validateValue');
 				}
 
 				textareasByColId[colId] = $textarea;
@@ -7458,6 +7600,36 @@ Craft.EditableTable.Row = Garnish.Base.extend(
 		))
 		{
 			ev.preventDefault();
+		}
+	},
+
+	validateValue: function(ev)
+	{
+		var safeValue;
+
+		if (ev.data.type == 'number')
+		{
+			// Only grab the number at the beginning of the value (if any)
+			var match = ev.currentTarget.value.match(/^\s*(-?[\d\.]*)/);
+
+			if (match !== null)
+			{
+				safeValue = match[1];
+			}
+			else
+			{
+				safeValue = '';
+			}
+		}
+		else
+		{
+			// Just strip any newlines
+			safeValue = ev.currentTarget.value.replace(/[\r\n]/g, '');
+		}
+
+		if (safeValue !== ev.currentTarget.value)
+		{
+			ev.currentTarget.value = safeValue;
 		}
 	},
 
@@ -7867,18 +8039,6 @@ Craft.EntryIndex = Craft.BaseElementIndex.extend(
 		}
 
 		return this.base();
-	},
-
-	getDefaultSort: function()
-	{
-		if (Garnish.hasAttr(this.$source, 'data-has-structure'))
-		{
-			return ['structure', 'asc'];
-		}
-		else
-		{
-			return ['postDate', 'desc'];
-		}
 	},
 
 	onSelectSource: function()
@@ -8956,7 +9116,9 @@ Craft.Grid = Garnish.Base.extend(
 		this.addListener(this.$container, 'resize', 'refreshCols');
 
 		// Trigger a window resize event in case anything needs to adjust itself, now that the items are layed out.
-		Garnish.$win.trigger('resize');
+		Garnish.requestAnimationFrame(function() {
+			Garnish.$win.trigger('resize');
+		});
 	},
 
 	addItems: function(items)
@@ -9656,6 +9818,11 @@ Craft.ImageHandler = Garnish.Base.extend(
 						Craft.ImageUpload.$modalContainerDiv = $('<div class="modal fitted"></div>').addClass(settings.modalClass).appendTo(Garnish.$bod);
 					}
 
+					if (response.fileName)
+					{
+						this.source = response.fileName;
+					}
+
 					if (response.html)
 					{
 						Craft.ImageUpload.$modalContainerDiv.empty().append(response.html);
@@ -9796,7 +9963,8 @@ Craft.ImageModal = Garnish.Modal.extend(
 
 		$img.height(newHeight).width(newWidth);
 		this.factor = factor;
-		if (this.cropAreaTool)
+
+		if (this.cropAreaTool && typeof $img.imgAreaSelect({instance: true}) != "undefined")
 		{
 			$img.imgAreaSelect({instance: true}).update();
 		}
