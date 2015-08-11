@@ -363,7 +363,7 @@ $.extend(Craft,
 			}
 			else
 			{
-				if (typeof data !== 'object')
+				if (data === null || typeof data !== 'object')
 				{
 					data = {};
 				}
