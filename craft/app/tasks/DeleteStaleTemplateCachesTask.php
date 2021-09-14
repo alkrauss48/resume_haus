@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.tasks
  * @since     2.0
  */
@@ -150,6 +150,9 @@ class DeleteStaleTemplateCachesTask extends BaseTask
 			// Chance overcorrecting a little for the sake of templates with pending elements,
 			// whose caches should be recreated (see http://craftcms.stackexchange.com/a/2611/9)
 			$criteria->status = null;
+
+			// Fixes https://github.com/craftcms/cms/issues/1593
+			$criteria->limit = null;
 
 			// See if any of the updated elements would get fetched by this query
 			if (array_intersect($criteria->ids(), $this->_elementIds))

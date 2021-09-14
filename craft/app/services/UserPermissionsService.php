@@ -1,15 +1,15 @@
 <?php
 namespace Craft;
 
-craft()->requireEdition(Craft::Pro);
+craft()->requireEdition(Craft::Client);
 
 /**
  * Class UserPermissionsService
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.services
  * @since     1.0
  */
@@ -52,7 +52,7 @@ class UserPermissionsService extends BaseApplicationComponent
 						'label' => Craft::t('Access the CP when the system is off')
 					),
 					'performUpdates' => array(
-						'label' => Craft::t('Perform Craft and plugin updates')
+						'label' => Craft::t('Perform Craft CMS and plugin updates')
 					),
 				)
 			),
@@ -73,30 +73,33 @@ class UserPermissionsService extends BaseApplicationComponent
 		// Users
 		// ---------------------------------------------------------------------
 
-		$permissions[Craft::t('Users')] = array(
-			'editUsers' => array(
-				'label' => Craft::t('Edit users'),
-				'nested' => array(
-					'registerUsers' => array(
-						'label' => Craft::t('Register users')
+		if (craft()->getEdition() == Craft::Pro)
+		{
+			$permissions[Craft::t('Users')] = array(
+				'editUsers' => array(
+					'label' => Craft::t('Edit users'),
+					'nested' => array(
+						'registerUsers' => array(
+							'label' => Craft::t('Register users')
+						),
+						'assignUserPermissions' => array(
+							'label' => Craft::t('Assign user groups and permissions')
+						),
+						'administrateUsers' => array(
+							'label' => Craft::t('Administrate users'),
+							'nested' => array(
+								'changeUserEmails' => array(
+									'label' => Craft::t('Change users’ emails')
+								),
+							),
+						),
 					),
-					'assignUserPermissions' => array(
-						'label' => Craft::t('Assign user groups and permissions')
-					),
-					'administrateUsers' => array(
-						'label' => Craft::t('Administrate users'),
-						'nested' => array(
-							'changeUserEmails' => array(
-								'label' => Craft::t('Change users’ emails')
-							)
-						)
-					)
 				),
-			),
-			'deleteUsers' => array(
-				'label' => Craft::t('Delete users')
-			),
-		);
+				'deleteUsers' => array(
+					'label' => Craft::t('Delete users')
+				),
+			);
+		}
 
 		// Locales
 		// ---------------------------------------------------------------------
@@ -185,7 +188,7 @@ class UserPermissionsService extends BaseApplicationComponent
 	 */
 	public function getPermissionsByGroupId($groupId)
 	{
-		if (!isset($this->_permissionsByUserId[$groupId]))
+		if (!isset($this->_permissionsByGroupId[$groupId]))
 		{
 			$groupPermissions = craft()->db->createCommand()
 				->select('p.name')
@@ -248,6 +251,10 @@ class UserPermissionsService extends BaseApplicationComponent
 		craft()->db->createCommand()
 			->delete('userpermissions_usergroups', array('groupId' => $groupId));
 
+		// Lowercase the permissions
+		$permissions = array_map('strtolower', $permissions);
+
+		// Filter out any orphaned permissions
 		$permissions = $this->_filterOrphanedPermissions($permissions);
 
 		if ($permissions)
@@ -264,6 +271,9 @@ class UserPermissionsService extends BaseApplicationComponent
 			craft()->db->createCommand()
 				->insertAll('userpermissions_usergroups', array('permissionId', 'groupId'), $groupPermissionVals);
 		}
+
+		// Cache the new permissions
+		$this->_permissionsByGroupId[$groupId] = $permissions;
 
 		return true;
 	}
@@ -324,6 +334,9 @@ class UserPermissionsService extends BaseApplicationComponent
 		craft()->db->createCommand()
 			->delete('userpermissions_users', array('userId' => $userId));
 
+		// Lowercase the permissions
+		$permissions = array_map('strtolower', $permissions);
+
 		// Filter out any orphaned permissions
 		$groupPermissions = $this->getGroupPermissionsByUserId($userId);
 		$permissions = $this->_filterOrphanedPermissions($permissions, $groupPermissions);
@@ -342,6 +355,9 @@ class UserPermissionsService extends BaseApplicationComponent
 			craft()->db->createCommand()
 				->insertAll('userpermissions_users', array('permissionId', 'userId'), $userPermissionVals);
 		}
+
+		// Cache the new permissions
+		$this->_permissionsByUserId[$userId] = $permissions;
 
 		return true;
 	}
@@ -545,8 +561,10 @@ class UserPermissionsService extends BaseApplicationComponent
 
 		foreach ($permissionsGroup as $name => $data)
 		{
+		    $name = strtolower($name);
+
 			// Should the user have this permission (either directly or via their group)?
-			if (($inPostedPermissions = in_array($name, $postedPermissions)) || in_array(strtolower($name), $groupPermissions))
+			if (($inPostedPermissions = in_array($name, $postedPermissions)) || in_array($name, $groupPermissions))
 			{
 				// First assign any nested permissions
 				if (!empty($data['nested']))

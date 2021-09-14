@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     2.0
  */
@@ -107,6 +107,7 @@ class TaskModel extends BaseComponentModel
 			'description' => $this->getDescription(),
 			'status'      => $this->status,
 			'progress'    => $this->getProgress(),
+			'age'         => time() - $this->dateUpdated->getTimestamp(),
 		);
 	}
 
@@ -127,6 +128,8 @@ class TaskModel extends BaseComponentModel
 			'totalSteps'  => AttributeType::Number,
 			'currentStep' => AttributeType::Number,
 			'status'      => array(AttributeType::Enum, 'values' => array(TaskStatus::Pending, TaskStatus::Error, TaskStatus::Running), 'default' => TaskStatus::Pending),
+			'dateCreated' => AttributeType::DateTime,
+			'dateUpdated' => AttributeType::DateTime,
 		));
 	}
 }

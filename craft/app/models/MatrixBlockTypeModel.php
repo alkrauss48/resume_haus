@@ -6,8 +6,8 @@ namespace Craft;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @copyright Copyright (c) 2014, Pixel & Tonic, Inc.
- * @license   http://buildwithcraft.com/license Craft License Agreement
- * @see       http://buildwithcraft.com
+ * @license   http://craftcms.com/license Craft License Agreement
+ * @see       http://craftcms.com
  * @package   craft.app.models
  * @since     1.3
  */
@@ -36,7 +36,7 @@ class MatrixBlockTypeModel extends BaseModel
 	 */
 	public function __toString()
 	{
-		return $this->handle;
+		return (string)$this->handle;
 	}
 
 	/**
